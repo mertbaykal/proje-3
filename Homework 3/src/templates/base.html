@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Crypto Dashboard{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    >
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="app-container">
+    <div class="sidebar">
+        <div class="logo">
+            <div class="logo-icon">
+                <i class="fas fa-chart-network"></i>
+            </div>
+            <div class="logo-text">Live Crypto</div>
+        </div>
+
+        <!-- NAVIGATION -->
+        <div class="nav-section">
+            <div class="nav-title">Navigation</div>
+
+            <a href="{{ url_for('dashboard') }}"
+               class="nav-link {% if request.path == '/' %}active{% endif %}">
+                <i class="fas fa-home nav-icon"></i>
+                <span>Dashboard</span>
+            </a>
+
+            <a href="{{ url_for('symbols_list') }}"
+               class="nav-link {% if request.path.startswith('/symbols') and 'sentiment' not in request.path %}active{% endif %}">
+                <i class="fas fa-coins nav-icon"></i>
+                <span>All Symbols</span>
+            </a>
+
+            <a href="{{ url_for('symbol_sentiment', symbol='BTCUSDT') }}"
+               class="nav-link {% if 'sentiment' in request.path %}active{% endif %}">
+                <i class="fas fa-comments nav-icon"></i>
+                <span>Sentiment Analysis</span>
+            </a>
+        </div>
+
+        <!-- DATABASE INFO -->
+        <div style="margin-top: 40px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+            <div style="font-size: 14px; color: #9CA3AF; margin-bottom: 10px;">Database Info</div>
+            <div style="font-size: 12px; color: #D1D5DB;">
+                <i class="fas fa-database" style="margin-right: 8px;"></i>
+                {{ db_path or "Not found" }}
+            </div>
+            {% if last_update %}
+            <div style="font-size: 12px; color: #D1D5DB; margin-top: 10px;">
+                <i class="fas fa-clock" style="margin-right: 8px;"></i>
+                Last Update: {{ last_update }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="main-content">
+        {% block content %}{% endblock %}
+    </div>
+</div>
+
+<script>
+    function toggleTheme() {
+        const html = document.documentElement;
+        const theme = html.getAttribute('data-theme');
+        const icon = document.querySelector('.theme-toggle i');
+
+        if (theme === 'dark') {
+            html.removeAttribute('data-theme');
+            if (icon) icon.className = 'fas fa-moon';
+        } else {
+            html.setAttribute('data-theme', 'dark');
+            if (icon) icon.className = 'fas fa-sun';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            const icon = document.querySelector('.theme-toggle i');
+            if (icon) icon.className = 'fas fa-sun';
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Technical Analysis - {{ symbol }}{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <div class="page-title">
+        📈 Technical Analysis - {{ symbol }}
+    </div>
+    <div class="actions">
+        <button class="theme-toggle" onclick="toggleTheme()">
+            <i class="fas fa-moon"></i>
+        </button>
+        <a class="btn btn-primary" href="{{ url_for('symbols_list') }}">
+            <i class="fas fa-arrow-left"></i>
+            Back to Symbols
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">
+        <i class="fas fa-sliders-h"></i>
+        Daily Technical Indicators (timeframe: 1D)
+    </div>
+
+    {% if message %}
+        <p style="color: var(--text-secondary); font-size: 14px;">
+            {{ message }}
+        </p>
+    {% else %}
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Date</th>
+                <th>Timeframe</th>
+                <th>RSI</th>
+                <th>MACD</th>
+                <th>MACD Signal</th>
+                <th>MACD Hist</th>
+                <th>Stoch %K</th>
+                <th>Stoch %D</th>
+                <th>ADX</th>
+                <th>CCI</th>
+                <th>SMA</th>
+                <th>EMA</th>
+                <th>WMA</th>
+                <th>BB Middle</th>
+                <th>BB Upper</th>
+                <th>BB Lower</th>
+                <th>Volume SMA</th>
+                <th>Signal</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in indicators %}
+                <tr>
+                    <td>{{ row["date"] }}</td>
+                    <td>{{ row["timeframe"] }}</td>
+                    <td>{{ row["rsi"]|format_float(2) }}</td>
+                    <td>{{ row["macd"]|format_float(4) }}</td>
+                    <td>{{ row["macd_signal"]|format_float(4) }}</td>
+                    <td>{{ row["macd_hist"]|format_float(4) }}</td>
+                    <td>{{ row["stoch_k"]|format_float(2) }}</td>
+                    <td>{{ row["stoch_d"]|format_float(2) }}</td>
+                    <td>{{ row["adx"]|format_float(2) }}</td>
+                    <td>{{ row["cci"]|format_float(2) }}</td>
+                    <td>{{ row["sma"]|format_float(4) }}</td>
+                    <td>{{ row["ema"]|format_float(4) }}</td>
+                    <td>{{ row["wma"]|format_float(4) }}</td>
+                    <td>{{ row["bb_middle"]|format_float(4) }}</td>
+                    <td>{{ row["bb_upper"]|format_float(4) }}</td>
+                    <td>{{ row["bb_lower"]|format_float(4) }}</td>
+                    <td>{{ row["vol_sma"]|format_float(2) }}</td>
+                    <td>{{ row["signal"] }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+{% endblock %}

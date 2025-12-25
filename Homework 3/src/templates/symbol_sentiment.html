@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Sentiment Analysis - {{ symbol }}{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <div class="page-title">
+        📊 Sentiment Analysis - {{ symbol }}
+        <div style="font-size: 14px; color: var(--text-secondary); margin-top: 4px;">
+            {{ base_asset }} / {{ quote_asset }}
+        </div>
+    </div>
+    <div class="actions">
+        <button class="theme-toggle" onclick="toggleTheme()">
+            <i class="fas fa-moon"></i>
+        </button>
+        <a class="btn btn-primary" href="{{ url_for('symbols_list') }}">
+            <i class="fas fa-arrow-left"></i>
+            Back to All Symbols
+        </a>
+    </div>
+</div>
+
+{% if sentiment %}
+<div class="stats-grid fade-in">
+    <div class="card stat-card">
+        <div class="stat-icon blue">
+            <i class="fas fa-chart-bar"></i>
+        </div>
+        <div class="stat-value">{{ "%.3f"|format(sentiment.sentiment_score) }}</div>
+        <div class="stat-label">Sentiment Score</div>
+        <div class="stat-change {% if sentiment.sentiment_score > 0 %}positive{% else %}negative{% endif %}">
+            <i class="fas fa-arrow-{% if sentiment.sentiment_score > 0 %}up{% else %}down{% endif %}"></i>
+            Range: -1.0 to 1.0
+        </div>
+    </div>
+
+    <div class="card stat-card">
+        <div class="stat-icon green">
+            <i class="fas fa-thumbs-up"></i>
+        </div>
+        <div class="stat-value">{{ sentiment.positive_count }}</div>
+        <div class="stat-label">Positive Items</div>
+        <div class="stat-change positive">
+            <i class="fas fa-arrow-up"></i>
+            {{ "%.1f"|format(sentiment.positive_count/sentiment.total_items*100) if sentiment.total_items else 0 }}%
+        </div>
+    </div>
+
+    <div class="card stat-card">
+        <div class="stat-icon orange">
+            <i class="fas fa-thumbs-down"></i>
+        </div>
+        <div class="stat-value">{{ sentiment.negative_count }}</div>
+        <div class="stat-label">Negative Items</div>
+        <div class="stat-change negative">
+            <i class="fas fa-arrow-down"></i>
+            {{ "%.1f"|format(sentiment.negative_count/sentiment.total_items*100) if sentiment.total_items else 0 }}%
+        </div>
+    </div>
+
+    <div class="card stat-card">
+        {% if sentiment.sentiment_signal == 'BULLISH' %}
+        <div class="stat-icon green">
+            <i class="fas fa-bullhorn"></i>
+        </div>
+        <div class="stat-value" style="color: var(--secondary);">
+            {{ sentiment.sentiment_signal }}
+        </div>
+        {% elif sentiment.sentiment_signal == 'BEARISH' %}
+        <div class="stat-icon red">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="stat-value" style="color: var(--danger);">
+            {{ sentiment.sentiment_signal }}
+        </div>
+        {% else %}
+        <div class="stat-icon gray">
+            <i class="fas fa-equals"></i>
+        </div>
+        <div class="stat-value" style="color: var(--gray);">
+            {{ sentiment.sentiment_signal }}
+        </div>
+        {% endif %}
+        <div class="stat-label">Market Signal</div>
+        <div class="stat-change">
+            <i class="fas fa-calendar"></i>
+            {{ sentiment.analysis_date }}
+        </div>
+    </div>
+</div>
+
+<div class="card fade-in" style="margin-top: 20px;">
+    <div class="card-title">
+        <i class="fas fa-history"></i>
+        Sentiment History
+    </div>
+    
+    {% if history %}
+    <table class="data-table">
+        <thead>
+        <tr>
+            <th>Date</th>
+            <th>Score</th>
+            <th>Signal</th>
+            <th>Positive</th>
+            <th>Negative</th>
+            <th>Neutral</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for day in history %}
+            <tr>
+                <td>{{ day.analysis_date }}</td>
+                <td>
+                    {% if day.sentiment_score > 0.2 %}
+                    <span style="color: var(--secondary);">
+                        {{ "%.3f"|format(day.sentiment_score) }}
+                    </span>
+                    {% elif day.sentiment_score < -0.2 %}
+                    <span style="color: var(--danger);">
+                        {{ "%.3f"|format(day.sentiment_score) }}
+                    </span>
+                    {% else %}
+                    <span style="color: var(--gray);">
+                        {{ "%.3f"|format(day.sentiment_score) }}
+                    </span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if day.sentiment_signal == 'BULLISH' %}
+                        <span class="badge badge-success">BULLISH</span>
+                    {% elif day.sentiment_signal == 'BEARISH' %}
+                        <span class="badge badge-danger">BEARISH</span>
+                    {% else %}
+                        <span class="badge badge-warning">NEUTRAL</span>
+                    {% endif %}
+                </td>
+                <td>{{ day.positive_count }}</td>
+                <td>{{ day.negative_count }}</td>
+                <td>{{ day.neutral_count }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="padding: 20px; text-align: center; color: var(--text-secondary);">
+        <i class="fas fa-history" style="font-size: 48px; margin-bottom: 10px;"></i>
+        <p>No sentiment history available.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card fade-in" style="margin-top: 20px;">
+    <div class="card-title">
+        <i class="fas fa-comment-alt"></i>
+        Sample Sentiment Items
+    </div>
+    
+    {% if sample_items %}
+    <table class="data-table">
+        <thead>
+        <tr>
+            <th>Text</th>
+            <th>Sentiment</th>
+            <th>Score</th>
+            <th>Source</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for item in sample_items %}
+            <tr>
+                <td style="max-width: 400px; overflow: hidden; text-overflow: ellipsis;">
+                    {{ item.text }}
+                </td>
+                <td>
+                    {% if item.label == 'POSITIVE' %}
+                        <span class="badge badge-success">POSITIVE</span>
+                    {% elif item.label == 'NEGATIVE' %}
+                        <span class="badge badge-danger">NEGATIVE</span>
+                    {% else %}
+                        <span class="badge badge-warning">NEUTRAL</span>
+                    {% endif %}
+                </td>
+                <td>{{ "%.3f"|format(item.polarity) if item.polarity else 'N/A' }}</td>
+                <td>{{ item.source }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="padding: 20px; text-align: center; color: var(--text-secondary);">
+        <i class="fas fa-comments" style="font-size: 48px; margin-bottom: 10px;"></i>
+        <p>No sentiment items available.</p>
+    </div>
+    {% endif %}
+</div>
+
+{% else %}
+<div class="card fade-in" style="text-align: center; padding: 40px;">
+    <i class="fas fa-comment-slash" style="font-size: 64px; color: var(--text-secondary); margin-bottom: 20px;"></i>
+    <h3 style="margin-bottom: 10px;">No Sentiment Data Available</h3>
+    <p style="color: var(--text-secondary); margin-bottom: 20px;">
+        Sentiment analysis has not been performed for {{ symbol }} yet.
+    </p>
+    <button class="btn btn-primary" onclick="runSentimentAnalysis()">
+        <i class="fas fa-play"></i>
+        Run First Analysis
+    </button>
+</div>
+{% endif %}
+
+<div style="margin-top: 20px; display: flex; gap: 15px;">
+    <a class="btn btn-secondary" href="{{ url_for('symbol_technical', symbol=symbol) }}">
+        <i class="fas fa-sliders-h"></i>
+        Technical Analysis
+    </a>
+    <a class="btn btn-secondary" href="{{ url_for('symbol_lstm', symbol=symbol) }}">
+        <i class="fas fa-wave-square"></i>
+        LSTM Predictions
+    </a>
+    <button class="btn btn-success" onclick="runSentimentAnalysis()">
+        <i class="fas fa-sync-alt"></i>
+        Run New Analysis
+    </button>
+</div>
+
+<script>
+function runSentimentAnalysis() {
+    if (confirm('Run sentiment analysis for {{ symbol }}?')) {
+        fetch('/api/sentiment/analyze/{{ symbol }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Analysis complete!\nScore: ${data.score.toFixed(3)}\nSignal: ${data.signal}`);
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+    }
+}
+</script>
+{% endblock %}
+<!-- [file content end] -->

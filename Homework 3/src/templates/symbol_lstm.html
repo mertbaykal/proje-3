@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}LSTM Forecast - {{ symbol }}{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <div class="page-title">
+        🤖 LSTM Price Prediction - {{ symbol }}
+        <div style="font-size: 14px; color: var(--text-secondary); margin-top: 4px;">
+            {{ base_asset }} / {{ quote_asset }}
+        </div>
+    </div>
+    <div class="actions">
+        <button class="theme-toggle" onclick="toggleTheme()">
+            <i class="fas fa-moon"></i>
+        </button>
+        <a class="btn btn-primary" href="{{ url_for('symbols_list') }}">
+            <i class="fas fa-arrow-left"></i>
+            Back to All Symbols
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">
+        <i class="fas fa-wave-square"></i>
+        Stored LSTM Predictions
+        <span style="font-size: 14px; color: var(--text-secondary); margin-left: 10px;">
+            (From lstm_predictions table)
+        </span>
+    </div>
+
+    {% if predictions|length == 0 %}
+        <div style="padding: 15px; color: var(--text-secondary); font-size: 14px;">
+            No LSTM predictions found in the database for {{ symbol }}.
+            Run the LSTM script to generate predictions first.
+        </div>
+    {% else %}
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Prediction date</th>
+                <th>Timeframe</th>
+                <th>Horizon (days)</th>
+                <th>Lookback (days)</th>
+                <th>Predicted close</th>
+                <th>RMSE</th>
+                <th>MAPE</th>
+                <th>R²</th>
+                <th>Model</th>
+                <th>Created at</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in predictions %}
+                <tr>
+                    <td>{{ row["prediction_date"] }}</td>
+                    <td>{{ row["timeframe"] }}</td>
+                    <td>{{ row["horizon_days"] }}</td>
+                    <td>{{ row["lookback_days"] }}</td>
+                    <td>{{ row["predicted_close"]|format_float(4) }}</td>
+                    <td>{{ row["rmse"]|format_float(4) }}</td>
+                    <td>{{ row["mape"]|format_float(4) }}</td>
+                    <td>{{ row["r2"]|format_float(4) }}</td>
+                    <td>{{ row["model_name"] }}</td>
+                    <td>{{ row["created_at"] }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+{% endblock %}

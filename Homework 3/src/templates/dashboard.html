@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Crypto Dashboard{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <div class="page-title">📊 Live Crypto Dashboard</div>
+    <div class="actions">
+        <button class="theme-toggle" onclick="toggleTheme()">
+            <i class="fas fa-moon"></i>
+        </button>
+        <button class="btn btn-primary" onclick="refreshPage(event)">
+            <i class="fas fa-sync-alt"></i>
+            Refresh
+        </button>
+        <div class="user-profile">
+            <div class="user-avatar">DB</div>
+            <div>
+                <div style="font-weight: 600;">Real Data</div>
+                <div style="font-size: 12px; color: var(--text-secondary);">From Database</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="stats-grid fade-in">
+    <div class="card stat-card">
+        <div class="stat-icon blue">
+            <i class="fas fa-coins"></i>
+        </div>
+        <div class="stat-value">{{ total_symbols }}</div>
+        <div class="stat-label">Total Symbols</div>
+        <div class="stat-change positive">
+            <i class="fas fa-database"></i>
+            From crypto.db
+        </div>
+    </div>
+
+    <div class="card stat-card">
+        <div class="stat-icon green">
+            <i class="fas fa-chart-bar"></i>
+        </div>
+        <div class="stat-value">{{ total_data_points }}</div>
+        <div class="stat-label">Data Points</div>
+        <div class="stat-change positive">
+            <i class="fas fa-chart-line"></i>
+            Historical records
+        </div>
+    </div>
+
+    <div class="card stat-card">
+        <div class="stat-icon orange">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="stat-value">{{ avg_volume|format_number }}</div>
+        <div class="stat-label">Avg Volume</div>
+        <div class="stat-change positive">
+            <i class="fas fa-money-bill-wave"></i>
+            Real trading data
+        </div>
+    </div>
+
+    <div class="card stat-card">
+        <div class="stat-icon purple">
+            <i class="fas fa-calendar-alt"></i>
+        </div>
+        <div class="stat-value">{{ last_update }}</div>
+        <div class="stat-label">Last Update</div>
+        <div class="stat-change positive">
+            <i class="fas fa-clock"></i>
+            Database timestamp
+        </div>
+    </div>
+</div>
+
+<div class="card fade-in">
+    <div class="card-title">
+        <i class="fas fa-trophy"></i>
+        Top 10 Symbols by Average Volume
+        <span style="font-size: 14px; color: var(--text-secondary); margin-left: 10px;">
+            (Live from your database)
+        </span>
+    </div>
+
+    <table class="data-table">
+        <thead>
+        <tr>
+            <th>Rank</th>
+            <th>Symbol</th>
+            <th>Base/Quote</th>
+            <th>Avg Volume</th>
+            <th>Max Volume</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for sym in top_symbols %}
+            <tr>
+                <td style="font-weight: 700; color: var(--primary);">#{{ loop.index }}</td>
+                <td>
+                    <div style="font-weight: 600; font-size: 16px;">{{ sym["symbol"] }}</div>
+                </td>
+                <td>
+                    <div style="font-weight: 500;">{{ sym["base_asset"] }}</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">/{{ sym["quote_asset"] }}</div>
+                </td>
+                <td style="font-weight: 600;">{{ sym["avg_volume"]|format_number }}</td>
+                <td style="font-weight: 600; color: var(--secondary);">{{ sym["max_volume"]|format_number }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div style="display: flex; gap: 15px; margin-top: 30px;">
+<a class="btn btn-primary" href="{{ url_for('symbols_list') }}">
+    <i class="fas fa-list"></i>
+    View All Symbols
+</a>
+    <button class="btn btn-secondary" onclick="showDatabaseInfo()">
+        <i class="fas fa-info-circle"></i>
+        Database Details
+    </button>
+</div>
+
+<script>
+    function refreshPage(event) {
+        const btn = event.target.closest('button');
+        btn.innerHTML = '<i class="fas fa-spinner refresh-btn"></i> Refreshing...';
+        setTimeout(() => {
+            window.location.reload();
+        }, 500);
+    }
+
+    function showDatabaseInfo() {
+        const info = `Database Information:\n\n` +
+            `Path: {{ db_path or "Not found" }}\n` +
+            `Total Symbols: {{ total_symbols }}\n` +
+            `Total Data Points: {{ total_data_points }}\n` +
+            `Last Update: {{ last_update }}\n` +
+            `Status: Connected`;
+        alert(info);
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block title %}All Symbols{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <div class="page-title">📋 Latest Daily Data per Symbol</div>
+    <div class="actions">
+        <button class="theme-toggle" onclick="toggleTheme()">
+            <i class="fas fa-moon"></i>
+        </button>
+
+        <!-- Global search (server-side) -->
+        <form method="get" action="{{ url_for('symbols_list') }}" class="search-form">
+            <input
+                type="text"
+                id="symbol-search"
+                name="q"
+                class="search-input"
+                placeholder="Search symbol..."
+                value="{{ q or '' }}"
+            >
+            <button type="submit" class="btn btn-secondary">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+        </form>
+
+        <a class="btn btn-primary" href="{{ url_for('dashboard') }}">
+            <i class="fas fa-arrow-left"></i>
+            Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">
+        <i class="fas fa-list-ol"></i>
+        Latest OHLCV Snapshot for Each Symbol
+        <span style="font-size: 14px; color: var(--text-secondary); margin-left: 10px;">
+            (One row per coin, latest date only)
+        </span>
+    </div>
+
+    <table class="data-table" id="symbols-table">
+        <thead>
+        <tr>
+            <!-- SORTABLE -->
+            <th class="sortable" data-sort-type="text">
+                Symbol <i class="fas fa-sort"></i>
+            </th>
+
+            <!-- NOT SORTABLE -->
+            <th>Base / Quote</th>
+            <th>Status</th>
+            <th>Date</th>
+
+            <!-- SORTABLE NUMERIC COLUMNS -->
+            <th class="sortable" data-sort-type="number">
+                Open <i class="fas fa-sort"></i>
+            </th>
+            <th class="sortable" data-sort-type="number">
+                High <i class="fas fa-sort"></i>
+            </th>
+            <th class="sortable" data-sort-type="number">
+                Low <i class="fas fa-sort"></i>
+            </th>
+            <th class="sortable" data-sort-type="number">
+                Close <i class="fas fa-sort"></i>
+            </th>
+            <th class="sortable" data-sort-type="number">
+                Volume <i class="fas fa-sort"></i>
+            </th>
+            <th class="sortable" data-sort-type="number">
+                Last Price 24h <i class="fas fa-sort"></i>
+            </th>
+            <th class="sortable" data-sort-type="number">
+                Volume 24h <i class="fas fa-sort"></i>
+            </th>
+            <th class="sortable" data-sort-type="number">
+                High 24h <i class="fas fa-sort"></i>
+            </th>
+            <th class="sortable" data-sort-type="number">
+                Low 24h <i class="fas fa-sort"></i>
+            </th>
+            <th class="sortable" data-sort-type="number">
+                Liquidity <i class="fas fa-sort"></i>
+            </th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for row in symbols %}
+            <tr data-symbol="{{ row['symbol'] }}">
+                <td><strong>{{ row["symbol"] }}</strong></td>
+
+                <td>
+                    <div style="font-weight: 500;">{{ row["base_asset"] }}</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">/{{ row["quote_asset"] }}</div>
+                </td>
+
+                <td>
+                    {% if row["is_active"] %}
+                        <span class="badge badge-success">Active</span>
+                    {% else %}
+                        <span class="badge badge-warning">Inactive</span>
+                    {% endif %}
+                </td>
+
+                <td>{{ row["date"] }}</td>
+
+                <td>{{ row["open"] }}</td>
+                <td>{{ row["high"] }}</td>
+                <td>{{ row["low"] }}</td>
+                <td>{{ row["close"] }}</td>
+                <td>{{ row["volume"] }}</td>
+                <td>{{ row["last_price_24h"] }}</td>
+                <td>{{ row["volume_24h"] }}</td>
+                <td>{{ row["high_24h"] }}</td>
+                <td>{{ row["low_24h"] }}</td>
+                <td>{{ row["liquidity"] }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+    <div style="color: var(--text-secondary); font-size: 14px;">
+        Page {{ page }} of {{ total_pages }}
+    </div>
+    <div style="display: flex; gap: 10px;">
+        {% if has_prev %}
+            <a class="btn btn-secondary" href="{{ url_for('symbols_list', page=page-1) }}">
+                <i class="fas fa-arrow-left"></i>
+                Previous
+            </a>
+        {% endif %}
+        {% if has_next %}
+            <a class="btn btn-secondary" href="{{ url_for('symbols_list', page=page+1) }}">
+                Next
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<div style="margin-top: 10px; color: var(--text-secondary); font-size: 14px;">
+    <i class="fas fa-info-circle"></i>
+    Right-click any row to open the full historical OHLCV data for that symbol.
+</div>
+
+<!-- Right-click menu -->
+<div id="row-context-menu" class="context-menu">
+    <button id="ctx-history-btn">
+        <i class="fas fa-chart-area"></i>
+        See historical data
+    </button>
+    <button id="ctx-technical-btn">
+        <i class="fas fa-sliders-h"></i>
+        Technical analysis
+    </button>
+    <button id="ctx-lstm-btn">
+        <i class="fas fa-wave-square"></i>
+        LSTM forecast
+    </button>
+</div>
+
+<script>
+    (function() {
+        const table = document.getElementById("symbols-table");
+        if (!table) return;
+
+        const headers = table.querySelectorAll("thead th.sortable");
+        const tbody = table.querySelector("tbody");
+
+        // Context menu
+        const contextMenu = document.getElementById("row-context-menu");
+        const historyBtn = document.getElementById("ctx-history-btn");
+        const technicalBtn = document.getElementById("ctx-technical-btn");  
+        const lstmBtn = document.getElementById("ctx-lstm-btn");
+
+        const historyUrlTemplate   = "{{ url_for('symbol_history',   symbol='__SYMBOL__') }}";
+        const technicalUrlTemplate = "{{ url_for('symbol_technical', symbol='__SYMBOL__') }}";
+        const lstmUrlTemplate      = "{{ url_for('symbol_lstm',      symbol='__SYMBOL__') }}";
+
+        let currentSymbol = null;
+
+        function attachRowHandlers() {
+            const rows = tbody.querySelectorAll("tr");
+            rows.forEach(row => {
+                row.addEventListener("contextmenu", function(e) {
+                    e.preventDefault();
+                    const symbol = this.dataset.symbol;
+                    if (!symbol || !contextMenu) return;
+                    currentSymbol = symbol;
+
+                    contextMenu.style.display = "block";
+                    contextMenu.style.left = e.pageX + "px";
+                    contextMenu.style.top  = e.pageY + "px";
+                });
+            });
+        }
+
+        function hideContextMenu() {
+            if (contextMenu) contextMenu.style.display = "none";
+            currentSymbol = null;
+        }
+
+        if (historyBtn && contextMenu) {
+            historyBtn.addEventListener("click", function() {
+                if (!currentSymbol) return;
+                const url = historyUrlTemplate.replace("__SYMBOL__", encodeURIComponent(currentSymbol));
+                window.location.href = url;
+                hideContextMenu();
+            });
+        }
+
+        if (technicalBtn && contextMenu) {
+            technicalBtn.addEventListener("click", function() {
+                if (!currentSymbol) return;
+                const url = technicalUrlTemplate.replace("__SYMBOL__", encodeURIComponent(currentSymbol));
+                window.location.href = url;
+                hideContextMenu();
+            });
+        }
+
+        if (lstmBtn && contextMenu) {
+            lstmBtn.addEventListener("click", function() {
+                if (!currentSymbol) return;
+                const url = lstmUrlTemplate.replace("__SYMBOL__", encodeURIComponent(currentSymbol));
+                window.location.href = url;
+                hideContextMenu();
+            });
+        }
+
+        document.addEventListener("click", function(e) {
+            if (!contextMenu || e.target.closest("#row-context-menu")) return;
+            hideContextMenu();
+        });
+
+        window.addEventListener("scroll", hideContextMenu);
+
+        //  Column sorting (client-side)
+        headers.forEach((th) => {
+            th.addEventListener("click", function() {
+                const index = th.cellIndex;
+                const type = th.dataset.sortType || "text";
+                const currentDir = th.dataset.sortDir || "none";
+                const newDir = currentDir === "asc" ? "desc" : "asc";
+                th.dataset.sortDir = newDir;
+
+                headers.forEach(h => {
+                    if (h !== th) {
+                        h.dataset.sortDir = "none";
+                        const icon = h.querySelector("i");
+                        if (icon) icon.className = "fas fa-sort";
+                    }
+                });
+
+                const icon = th.querySelector("i");
+                if (icon) {
+                    icon.className = newDir === "asc" ? "fas fa-sort-up" : "fas fa-sort-down";
+                }
+
+                const rows = Array.from(tbody.querySelectorAll("tr"));
+                rows.sort((a, b) => {
+                    const aText = a.cells[index].innerText.trim();
+                    const bText = b.cells[index].innerText.trim();
+
+                    if (type === "number") {
+                        const aVal = parseFloat(aText.replace(/,/g, "")) || 0;
+                        const bVal = parseFloat(bText.replace(/,/g, "")) || 0;
+                        return newDir === "asc" ? aVal - bVal : bVal - aVal;
+                    } else {
+                        const aVal = aText.toLowerCase();
+                        const bVal = bText.toLowerCase();
+                        if (aVal < bVal) return newDir === "asc" ? -1 : 1;
+                        if (aVal > bVal) return newDir === "asc" ? 1 : -1;
+                        return 0;
+                    }
+                });
+
+                rows.forEach(row => tbody.appendChild(row));
+            });
+        });
+
+        attachRowHandlers();
+    })();
+</script>
+{% endblock %}

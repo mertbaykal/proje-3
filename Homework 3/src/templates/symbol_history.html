@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}History - {{ symbol }}{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <div class="page-title">📈 Historical Data - {{ symbol }}</div>
+    <div class="actions">
+        <button class="theme-toggle" onclick="toggleTheme()">
+            <i class="fas fa-moon"></i>
+        </button>
+        <a class="btn btn-primary" href="{{ url_for('symbols_list') }}">
+            <i class="fas fa-arrow-left"></i>
+            Back to All Symbols
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">
+        <i class="fas fa-chart-line"></i>
+        Daily OHLCV History for {{ symbol }}
+        {% if meta %}
+            <span style="font-size: 14px; color: var(--text-secondary); margin-left: 10px;">
+                ({{ meta.base_asset }} / {{ meta.quote_asset }},
+                {% if meta.is_active %}Active{% else %}Inactive{% endif %})
+            </span>
+        {% endif %}
+    </div>
+
+    {% if not_found %}
+        <div class="loading">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>Symbol {{ symbol }} not found in database.</div>
+        </div>
+    {% elif history|length == 0 %}
+        <div class="loading">
+            <i class="fas fa-circle-info"></i>
+            <div>No historical data available for {{ symbol }}.</div>
+        </div>
+    {% else %}
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Date</th>
+                <th>Open</th>
+                <th>High</th>
+                <th>Low</th>
+                <th>Close</th>
+                <th>Volume</th>
+                <th>Last Price 24h</th>
+                <th>Volume 24h</th>
+                <th>High 24h</th>
+                <th>Low 24h</th>
+                <th>Liquidity</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in history %}
+                <tr>
+                    <td>{{ row["date"] }}</td>
+                    <td>{{ row["open"] }}</td>
+                    <td>{{ row["high"] }}</td>
+                    <td>{{ row["low"] }}</td>
+                    <td>{{ row["close"] }}</td>
+                    <td>{{ row["volume"] }}</td>
+                    <td>{{ row["last_price_24h"] }}</td>
+                    <td>{{ row["volume_24h"] }}</td>
+                    <td>{{ row["high_24h"] }}</td>
+                    <td>{{ row["low_24h"] }}</td>
+                    <td>{{ row["liquidity"] }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+{% endblock %}
